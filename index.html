@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="assets/js/main.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>todos</h1>
+        </header>
+        <section class="main">
+            <form autocomplete="off" id="todoForm">
+                <input type="text" id="addTodo" placeholder="What needs to be done?" value="">
+            </form>
+                <ul class="tasks">
+                    
+                </ul>
+            </section>
+       
+        <footer>
+            <span><strong>x</strong> item left</span>
+            <div class="filterBtns">
+                <label><input type="radio" name="filter" value="all" checked>All</label>
+                <label><input type="radio" name="filter" value="active">Active</label>
+                <label><input type="radio" name="filter" value="completed">Completed</label>
+            </div>
+        </footer>
+    </div>
+
+</body>
+</html>
