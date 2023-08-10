@@ -45,7 +45,7 @@ function editTodo(e) {
     if(e.key === 'Enter') {
         this.previousElementSibling.innerText = this.value;
         this.parentElement.classList.remove('editing');
-        this.previousElementSibling.style.display = 'block';
+        this.previousElementSibling.style.display = 'inline';
         this.parentElement.childNodes[5].style.display="none"
         savedata();
     }  
@@ -53,7 +53,7 @@ function editTodo(e) {
 function showTodoEdit() {
     this.parentElement.classList.add('editing');
     this.style.display = "none";
-    this.parentElement.childNodes[5].style.display="block"
+    this.parentElement.childNodes[5].style.display="inline"
     const currValue = this.nextElementSibling.value;
     this.nextElementSibling.value = '';
     this.nextElementSibling.value = currValue;
