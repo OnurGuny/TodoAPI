@@ -1,83 +1,136 @@
-qs=s=> document.querySelector(s);
-qsA=s=> document.querySelectorAll(s);
 
-const todoForm=qs("#todoForm")
-const addTodo = qs("#addTodo");
-const tasks = qs(".tasks");
-const filterBtns = qsA("filterBtns");
+const todoForm = document.querySelector('#todoForm');
+const todoInput = document.querySelector('.new-todo');
+const todoList = document.querySelector('.todoList');
+const countItem = document.querySelector('#countItem')
+const optionActor = document.querySelector('#actor-id');
+const optionAssignee = document.querySelector('#assigne-id');
+todoForm.addEventListener("submit",addTodo);
+let todos=[];
+let users=[];
+const prefixUrl = "https://todorestapi-20432433159e.herokuapp.com/api/todos/"
+const usersUrl = "https://todorestapi-20432433159e.herokuapp.com/api/users/"
 
-function addingTodo (e){
-    e.preventDefault();
-    if(addTodo.value===""){
-        alert("Please don't be lazy share us what needs to be done ?")
-        return;
+const requestCreateUrl=`${prefixUrl}create/`
+const requestUpdateUrl=`${prefixUrl}update/`
+const requestDeleteUrl=`${prefixUrl}delete/`
+async function loadingData(){
+    todos= await fetch(`${prefixUrl}`).then(x=>x.json())
+    users= await fetch(`${usersUrl}`).then(x=>x.json())
+    renderTodos()
+}
+function renderTodos() {
+    for (const user of users) {
+        optionActor.innerHTML += `<option value="${user.id}">${user.username}</option>`
+        optionAssignee.innerHTML += `<option value="${user.id}">${user.username}</option>`
     }
-    tasks.innerHTML +=
-     `<li>
-        <div class="view">
-            <input class="toggle" type="checkbox">
-            <label class="todoLabel">${addTodo.value}</label>
-            <input type="edit" class="edit" value="${addTodo.value}">
-            <button class="destroy">x</button>
-        </div>
-    </li>`;
-    addTodo.value="";
-    savedata();
-    bindClicks();
-
+    for (const todo of todos) {
+        todoList.innerHTML += 
+        `<li data-id="${todo.id}" class="${todo.completed ? 'completed' : ''}">
+            <input type="checkbox" class="todo">
+            <label>${todo.title}</label>
+            <input type="edit" class="edit-button" value="${todo.title}">
+            <button class="delete-button">x</button>
+        </li>`
+        bindClicks();
+    }
+};
+function addTodo() {
+    let todo = {
+        title: todoInput.value,
+        completed:false,
+        actor:optionActor.value,
+        assignee:optionAssignee.value
+    };
+    fetch(`${requestCreateUrl}`,{
+        method:"POST",
+        body:JSON.stringify(todo),
+        headers:{
+            'Content-type': 'application/json;'
+        },
+    })
+    .then(x => x.json())
+    .then(todo => {
+        todoList.innerHTML += `<li data-id="${todo.id}" class="${todo.completed ? 'completed' : ''}">
+        <input type="checkbox" class="todo">
+        <label>${todo.title}</label>
+        <input type="edit" class="edit-button" value="${todo.title}">
+        <button class="delete-button">x</button>
+        </li>`
+    })
+};
+async function findTodo(id) {
+    const response = await fetch(`${prefixUrl}${id}/`).then(x=>x.json())
+    return response
 }
-todoForm.addEventListener("submit", addingTodo)
-
-for (const filter of document.querySelectorAll(".filterBtns input")) {
-    filter.addEventListener("click",function(){
-        tasks.classList.value="tasks " + this.value; 
-    });
+function markTodo(id,check,todo) {
+    fetch(`${requestUpdateUrl}${id}/`, {
+        method: 'PUT',
+        body: JSON.stringify({
+            title: todo.title,
+            completed: check,
+            actor:todo.actor,
+            assignee:todo.assignee,
+        }),
+        headers: {
+            'Content-type': 'application/json;'
+        }
+    })
 }
-function markTodo(){
-    this.classList.toggle("complete")
-    savedata();
-}
-function removeTodo(){
-    this.parentElement.parentElement.remove();
-    savedata();
-}
-function editTodo(e) {
-    if(e.key === 'Enter') {
-        this.previousElementSibling.innerText = this.value;
-        this.parentElement.classList.remove('editing');
-        this.previousElementSibling.style.display = 'inline';
-        this.parentElement.childNodes[5].style.display="none"
-        savedata();
-    }  
+function editTodo(id,newTodo,todo) {
+    fetch(`${requestUpdateUrl}${id}/`, {
+        method: 'PUT',
+        body: JSON.stringify({
+            title: newTodo === null ? todo.title : newTodo,
+            completed: todo.completed,
+            actor:todo.actor,
+            assignee:todo.assignee,
+        }),
+        headers: {
+            'Content-type': 'application/json;'
+        }
+    })
 }
 function showTodoEdit() {
     this.parentElement.classList.add('editing');
     this.style.display = "none";
-    this.parentElement.childNodes[5].style.display="inline"
     const currValue = this.nextElementSibling.value;
     this.nextElementSibling.value = '';
     this.nextElementSibling.value = currValue;
     this.nextElementSibling.focus();
-    savedata()
 }
-function bindClicks(){
-    for (const btn of qsA(".destroy")) {
-        btn.addEventListener("click", removeTodo);    
+function bindClicks() {
+    for (const btn of document.querySelectorAll('.delete-button')) {
+        btn.addEventListener('click', async function(e) {
+            const targetEl = e.target.parentElement;
+            const foundTodo= await findTodo(targetEl.dataset.id);
+            fetch(`${requestDeleteUrl}${foundTodo.id}/`, {
+                method: 'DELETE'
+            });
+            targetEl.remove()
+        });
     }
-    for (const btn of qsA("li")) {
-        btn.addEventListener("click", markTodo);    
+    for (const btn of document.querySelectorAll('label')) {
+        btn.addEventListener('click', async function(e) {
+            const targetEl = e.target.parentElement;
+            targetEl.classList.toggle("completed");
+            const foundTodo= await findTodo(targetEl.dataset.id);
+            markTodo(targetEl.dataset.id, targetEl.classList.contains("completed"), foundTodo)
+        });
+    }
+    document.querySelectorAll('label').forEach(x => x.addEventListener('dblclick', showTodoEdit));
+    document.querySelectorAll('.edit-button').forEach(x => x.addEventListener('keydown',  async function (e) {
+        const targetEl = e.target.parentElement;
+        const foundTodo= await findTodo(targetEl.dataset.id);
+        let newTodo;
+        if(e.key === 'Enter') {
+            this.previousElementSibling.innerText = this.value;
+            newTodo=this.value
+            this.parentElement.classList.remove('editing');
+            this.previousElementSibling.style.display = 'block';
+            editTodo(targetEl.dataset.id,newTodo,foundTodo);
+        }
         
-    }
-    qsA("label").forEach(x=>x.addEventListener("dblclick", showTodoEdit))
-    qsA(".edit").forEach(x=>x.addEventListener("keydown", editTodo))
-    savedata();
-}
-
-function savedata() {
-    localStorage.setItem("data", tasks.innerHTML);
-}
-function loaddata() {
-   tasks.innerHTML = localStorage.getItem("data");
-}
-loaddata();
-bindClicks();
+    }));
+};
+loadingData();
